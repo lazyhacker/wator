@@ -25,10 +25,11 @@ const (
 	SHARK
 )
 
+// Constant value for various fish/shark settings.
 const (
-	FISH_SPAWN   = 20 // rounds for fish to give birth
-	SHARK_SPAWN  = 40 // rounds for shark to give birth
-	SHARK_HEALTH = 15 // rounds shark survives without eating
+	FISHSPAWN   = 20 // rounds for fish to give birth
+	SHARKSPAWN  = 40 // rounds for shark to give birth
+	SHARKHEALTH = 15 // rounds shark survives without eating
 )
 
 var initFish = *flag.Int("fish", 50, "Initial # of fish.")
@@ -36,23 +37,28 @@ var initShark = *flag.Int("sharks", 20, "Initial # of sharks.")
 var worldWidth = *flag.Int("width", 20, "Width of the world (East - West).")
 var worldHeight = *flag.Int("height", 20, "Height of the world (North-South).")
 
+// Fish represents a fish that eats plankton and give birth after X number of turns.
 type Fish struct {
 	spawn int // counter to birthing another fish
 	x, y  int // position on the map
 }
 
+// Shark represents a shark.
 type Shark struct {
 	spawn, health int
 	x, y          int
 }
 
+// MapNode represent each position of a world map.
 type MapNode struct {
 	ctype    int         // creature type
 	creature interface{} // pointer to the fish or shark
 }
 
+// WorldMap represents a map of Wator.
 type WorldMap [][]MapNode
 
+// SetMapNode will write to values of a MapNode.
 func SetMapNode(wm WorldMap, x int, y int, ct int, c interface{}) {
 	wm[x][y].ctype = ct
 	wm[x][y].creature = c
@@ -74,6 +80,7 @@ func DrawMap(m WorldMap) {
 	}
 }
 
+// GetDirection will return a new random direction from origin.
 func GetDirection(x int, y int) (int, int, int) {
 	d := rand.Intn(4)
 
@@ -84,15 +91,15 @@ func GetDirection(x int, y int) (int, int, int) {
 		if ny == 0 {
 			ny = worldHeight - 1
 		} else {
-			ny -= 1
+			ny--
 		}
 	case SOUTH:
-		ny += 1
+		ny++
 		if ny == worldHeight {
 			ny = 0
 		}
 	case EAST:
-		nx += 1
+		nx++
 		if nx == worldWidth {
 			nx = 0
 		}
@@ -100,16 +107,17 @@ func GetDirection(x int, y int) (int, int, int) {
 		if nx == 0 {
 			nx = worldWidth - 1
 		} else {
-			nx -= 1
+			nx--
 		}
 	}
 
 	return nx, ny, d
 }
 
-func GetTermboxEvents(evt_queue chan<- termbox.Event) {
+// GetTermboxEvents will get the keyboard event and pass it to the event queue.
+func GetTermboxEvents(evtQueue chan<- termbox.Event) {
 	for {
-		evt_queue <- termbox.PollEvent()
+		evtQueue <- termbox.PollEvent()
 	}
 }
 
@@ -204,7 +212,7 @@ func main() {
 
 				if wm[nx][ny].ctype == PLANKTON {
 					// Determine if we spawn a new fish.  If so then put in the orig spot.
-					if f.spawn == FISH_SPAWN && flist.Len()+slist.Len() < worldWidth*worldHeight {
+					if f.spawn == FISHSPAWN && flist.Len()+slist.Len() < worldWidth*worldHeight {
 						nf := new(Fish)
 						nf.x = f.x
 						nf.y = f.y
@@ -242,7 +250,7 @@ func main() {
 				s.health++
 
 				if wm[nx][ny].ctype == PLANKTON || wm[nx][ny].ctype == FISH {
-					if s.spawn == SHARK_SPAWN && flist.Len()+slist.Len() < worldWidth*worldHeight {
+					if s.spawn == SHARKSPAWN && flist.Len()+slist.Len() < worldWidth*worldHeight {
 						ns := new(Shark)
 						ns.x = s.x
 						ns.y = s.y
@@ -260,7 +268,7 @@ func main() {
 						s.health = 0
 					}
 
-					if s.health == SHARK_HEALTH {
+					if s.health == SHARKHEALTH {
 						wm[nx][ny].ctype = PLANKTON
 						wm[nx][ny].creature = nil
 						slist.Remove(e)
