@@ -1,13 +1,11 @@
-/*This is an implementation of Wator in Go.*/
-package main
+// This is an implementation of Wator in Go.
+package main // import "lazyhackergo.com/wator"
 
 import (
 	"container/list"
 	"flag"
 	"math/rand"
 	"time"
-
-	"github.com/nsf/termbox-go"
 )
 
 // Define the directions fish/sharks can go.
