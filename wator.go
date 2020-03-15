@@ -6,6 +6,8 @@ import (
 	"flag"
 	"math/rand"
 	"time"
+
+	termbox "github.com/nsf/termbox-go"
 )
 
 // Define the directions fish/sharks can go.
