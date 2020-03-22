@@ -1,5 +1,5 @@
 // This is an implementation of Wator in Go.
-package main // import "lazyhackergo.com/wator"
+package main // import "lazyhacker.dev/wator"
 
 import (
 	"container/list"
@@ -32,10 +32,12 @@ const (
 	SHARKHEALTH = 15 // rounds shark survives without eating
 )
 
-var initFish = *flag.Int("fish", 50, "Initial # of fish.")
-var initShark = *flag.Int("sharks", 20, "Initial # of sharks.")
-var worldWidth = *flag.Int("width", 20, "Width of the world (East - West).")
-var worldHeight = *flag.Int("height", 20, "Height of the world (North-South).")
+var (
+	initFish    = *flag.Int("fish", 50, "Initial # of fish.")
+	initShark   = *flag.Int("sharks", 20, "Initial # of sharks.")
+	worldWidth  = *flag.Int("width", 20, "Width of the world (East - West).")
+	worldHeight = *flag.Int("height", 20, "Height of the world (North-South).")
+)
 
 // Fish represents a fish that eats plankton and give birth after X number of turns.
 type Fish struct {
