@@ -1,13 +1,30 @@
-// This is an implementation of Wator in Go.
+// wator is an implementation of the Wa-Tor simulation in Go.
+//
+// The rules are the simulation are:
+//
+//   - The world is a toroidal (donut-shaped) sea planet consisting of fish and
+//     sharks.
+//   - Fish feed on ubiuitous plankton and the sharks feed on the fish.
+//   - During each cycle fish move randomly to an unoccupied adjacent square.
+//   - After a number of cycles will spawn a new fish.
+//   - Sharks will move to an adjacent square if there is a fish and eats the
+//     fish otherwise it will move to an random adjacent unoccupied square.
+//   - Sharks must eat a fish within a number of cycles or it will die.
+//   - At a certain age a shark will spawn a new shark.
+
 package main // import "lazyhacker.dev/wator"
 
 import (
-	"container/list"
 	"flag"
+	"fmt"
+	"image/color"
+	"log"
 	"math/rand"
+	"strconv"
 	"time"
 
-	termbox "github.com/nsf/termbox-go"
+	"github.com/hajimehoshi/ebiten"
+	"github.com/hajimehoshi/ebiten/ebitenutil"
 )
 
 // Define the directions fish/sharks can go.
@@ -18,280 +35,339 @@ const (
 	WEST
 )
 
+type coordinate struct {
+	x, y int
+}
+
+var (
+	nFish   = flag.Int("fish", 10, "Initial # of fish.")
+	nSharks = flag.Int("sharks", 1000, "Initial # of sharks.")
+	fBreed  = flag.Int("fbreed", 20, "# of cycles for fish to reproduce (default: 20)")
+	sBreed  = flag.Int("sbreed", 30, "# of cycles for shark to reproduce (default: 40)")
+	starve  = flag.Int("starve", 30, "# of cycles shark can go with feeding before dying (default: 15)")
+	wwidth  = flag.Int("width", 320, "Width of the world (East - West).")
+	wheight = flag.Int("height", 240, "Height of the world (North-South).")
+)
+
+var tick = 0
+var wm [][]*creature
+
 // Types of creatures in Wator.
 const (
-	PLANKTON = iota
-	FISH
+	FISH = iota
 	SHARK
 )
 
-// Constant value for various fish/shark settings.
-const (
-	FISHSPAWN   = 20 // rounds for fish to give birth
-	SHARKSPAWN  = 40 // rounds for shark to give birth
-	SHARKHEALTH = 15 // rounds shark survives without eating
-)
-
 var (
-	initFish    = *flag.Int("fish", 50, "Initial # of fish.")
-	initShark   = *flag.Int("sharks", 20, "Initial # of sharks.")
-	worldWidth  = *flag.Int("width", 20, "Width of the world (East - West).")
-	worldHeight = *flag.Int("height", 20, "Height of the world (North-South).")
+	fishcolor  = color.RGBA{255, 255, 0, 255} // YELLOW
+	sharkcolor = color.RGBA{255, 0, 0, 255}   // RED
 )
 
-// Fish represents a fish that eats plankton and give birth after X number of turns.
-type Fish struct {
-	spawn int // counter to birthing another fish
-	x, y  int // position on the map
+type creature struct {
+	age, health, species int
+	asset                color.RGBA
+	chronon              int
 }
 
-// Shark represents a shark.
-type Shark struct {
-	spawn, health int
-	x, y          int
-}
+// Chronon determines what happens with the world at each turn.
+func Chronon(c int) {
 
-// MapNode represent each position of a world map.
-type MapNode struct {
-	ctype    int         // creature type
-	creature interface{} // pointer to the fish or shark
-}
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
-// WorldMap represents a map of Wator.
-type WorldMap [][]MapNode
+	var xcoord, ycoord int
 
-// SetMapNode will write to values of a MapNode.
-func SetMapNode(wm WorldMap, x int, y int, ct int, c interface{}) {
-	wm[x][y].ctype = ct
-	wm[x][y].creature = c
-}
+	for y := 0; y < *wheight; y++ {
+		for x := 0; x < *wwidth; x++ {
 
-// DrawMap will draw the current state of the world map.
-func DrawMap(m WorldMap) {
-	for i := 0; i < worldWidth; i++ {
-		for j := 0; j < worldHeight; j++ {
-			switch m[i][j].ctype {
+			north, south, east, west := adjacent(x, y)
+
+			if wm[x][y] == nil {
+				continue
+			}
+
+			if wm[x][y].chronon == c {
+				continue
+			}
+			wm[x][y].age += 1
+			d := r.Intn(3)
+			switch wm[x][y].species {
 			case FISH:
-				termbox.SetCell(i, j, 'F', termbox.ColorYellow, termbox.ColorBlue)
+				foundspace := false
+				for i := 0; i < 4; i++ {
+					d += i
+
+					switch d % 4 {
+					case NORTH:
+						xcoord = north.x
+						ycoord = north.y
+					case SOUTH:
+						xcoord = south.x
+						ycoord = south.y
+					case EAST:
+						xcoord = east.x
+						ycoord = east.y
+					case WEST:
+						xcoord = west.x
+						ycoord = west.y
+					}
+
+					// Found an open square.
+					if wm[xcoord][ycoord] == nil {
+						foundspace = true
+						wm[xcoord][ycoord] = wm[x][y]
+
+						//log.Printf("Moving fish from (%d, %d)  to (%d, %d)\n", x, y, xcoord, ycoord)
+
+						// If not a baby and of spawning age.
+						if wm[x][y].age != 0 && wm[x][y].age%*fBreed == 0 {
+							// spawn a new fish in its place
+							wm[x][y] = &creature{
+								age:     0,
+								species: FISH,
+								asset:   fishcolor,
+								chronon: c,
+							}
+						} else {
+							wm[x][y] = nil
+						}
+						break
+					}
+				}
+				if !foundspace {
+					wm[x][y] = nil
+				}
 			case SHARK:
-				termbox.SetCell(i, j, 'S', termbox.ColorRed, termbox.ColorBlue)
-			default:
-				termbox.SetCell(i, j, 'P', termbox.ColorBlue, termbox.ColorBlue)
+				//log.Printf("Shark at (%d, %d)\n", x, y)
+
+				foundfish := false
+				wm[x][y].health -= 1
+
+				if wm[x][y].health == 0 {
+					wm[x][y] = nil
+					break
+				}
+				wm[x][y].chronon = c
+
+				for i := 0; i < 4; i++ {
+					d += i
+					switch d % 4 {
+					case NORTH:
+						xcoord = north.x
+						ycoord = north.y
+					case SOUTH:
+						xcoord = south.x
+						ycoord = south.y
+					case EAST:
+						xcoord = east.x
+						ycoord = east.y
+					case WEST:
+						xcoord = west.x
+						ycoord = west.y
+					}
+
+					if wm[xcoord][ycoord] == nil {
+						break
+					}
+
+					// Found a fish in adjacent square so eat it and move there.
+					if wm[xcoord][ycoord].species == FISH {
+						foundfish = true
+						wm[xcoord][ycoord] = wm[x][y]
+						wm[xcoord][ycoord].health = *starve
+						break
+					}
+				}
+
+				// If no fish, pick adjacent square and move there.
+				if !foundfish {
+					for i := 0; i < 4; i++ {
+						d += i
+						switch d % 4 {
+						case NORTH:
+							xcoord = north.x
+							ycoord = north.y
+						case SOUTH:
+							xcoord = south.x
+							ycoord = south.y
+						case EAST:
+							xcoord = east.x
+							ycoord = east.y
+						case WEST:
+							xcoord = west.x
+							ycoord = west.y
+						}
+
+						if wm[xcoord][ycoord] == nil {
+							wm[xcoord][ycoord] = wm[x][y]
+							wm[xcoord][ycoord].chronon = c
+							wm[x][y] = nil
+
+							// Spawn a new shark in the old spot.
+							if wm[xcoord][ycoord].age != 0 && wm[xcoord][ycoord].age%*sBreed == 0 {
+								wm[x][y] = &creature{
+									age:     0,
+									health:  *starve,
+									species: SHARK,
+									asset:   sharkcolor,
+									chronon: c,
+								}
+							}
+							break
+						}
+					}
+				}
 			}
 		}
 	}
 }
 
-// GetDirection will return a new random direction from origin.
-func GetDirection(x int, y int) (int, int, int) {
-	d := rand.Intn(4)
+// adjacent returns the adjecent squares in the order of
+// North, South, East, West.
+func adjacent(x, y int) (coordinate, coordinate, coordinate, coordinate) {
 
-	nx := x
-	ny := y
-	switch d {
-	case NORTH:
-		if ny == 0 {
-			ny = worldHeight - 1
-		} else {
-			ny--
-		}
-	case SOUTH:
-		ny++
-		if ny == worldHeight {
-			ny = 0
-		}
-	case EAST:
-		nx++
-		if nx == worldWidth {
-			nx = 0
-		}
-	case WEST:
-		if nx == 0 {
-			nx = worldWidth - 1
-		} else {
-			nx--
+	var n, s, e, w coordinate
+	if y == 0 {
+		n.y = *wheight - 1
+	} else {
+		n.y = y - 1
+	}
+	n.x = x
+	if y == *wheight-1 {
+		s.y = 0
+	} else {
+		s.y = y + 1
+	}
+	s.x = x
+	if x == *wwidth-1 {
+		e.x = 0
+	} else {
+		e.x = x + 1
+	}
+	e.y = y
+	if x == 0 {
+		w.x = *wwidth - 1
+	} else {
+		w.x = x - 1
+	}
+	w.y = y
+
+	return n, s, e, w
+
+}
+func initWator() [][]*creature {
+
+	// Set up the world map as a 2-D Slice
+	var wm = make([][]*creature, *wwidth)
+	for i := range wm {
+		wm[i] = make([]*creature, *wheight)
+	}
+	pop := 0
+
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	//r := rand.New(rand.NewSource(10))
+	for i := 0; i < *nFish; i++ {
+		for {
+			if pop == *wwidth**wheight {
+				break
+			}
+			x := r.Intn(*wwidth - 1)
+			y := r.Intn(*wheight - 1)
+
+			if wm[x][y] == nil {
+				wm[x][y] = &creature{
+					age:     0,
+					species: FISH,
+					asset:   fishcolor,
+				}
+				pop++
+				break
+			}
 		}
 	}
 
-	return nx, ny, d
+	for i := 0; i < *nSharks; i++ {
+		for {
+			if pop == *wwidth**wheight {
+				break
+			}
+			x := r.Intn(*wwidth - 1)
+			y := r.Intn(*wheight - 1)
+
+			if wm[x][y] == nil {
+				wm[x][y] = &creature{
+					age:     0,
+					species: SHARK,
+					health:  *starve,
+					asset:   sharkcolor,
+				}
+				pop++
+				break
+			}
+		}
+	}
+
+	return wm
 }
 
-// GetTermboxEvents will get the keyboard event and pass it to the event queue.
-func GetTermboxEvents(evtQueue chan<- termbox.Event) {
-	for {
-		evtQueue <- termbox.PollEvent()
+func debug() {
+	for y := 0; y < *wheight; y++ {
+		for x := 0; x < *wwidth; x++ {
+			if wm[x][y] == nil {
+				fmt.Print(" ")
+			} else {
+				switch wm[x][y].species {
+				case FISH:
+					fmt.Print("F")
+				case SHARK:
+					fmt.Print("S")
+				}
+			}
+		}
+
+		fmt.Println()
+	}
+}
+
+func update(screen *ebiten.Image) error {
+
+	tick++
+	Chronon(tick)
+
+	if ebiten.IsDrawingSkipped() {
+		return nil
+	}
+
+	screen.Fill(color.RGBA{255, 255, 255, 255})
+	render(screen)
+	ebitenutil.DebugPrint(screen, strconv.Itoa(tick))
+	return nil
+
+}
+
+func render(screen *ebiten.Image) {
+	for x := 0; x < *wwidth; x++ {
+		for y := 0; y < *wheight; y++ {
+			if wm[x][y] != nil {
+				screen.Set(x, y, wm[x][y].asset)
+			} else {
+				screen.Set(x, y, color.RGBA{0, 0, 0, 255})
+			}
+		}
 	}
 }
 
 func main() {
 
-	rand.Seed(time.Now().Unix())
 	flag.Parse()
 
-	bklp := false
-	err := termbox.Init()
-	if err != nil {
-		panic(err)
-	}
-	defer termbox.Close()
-
-	if initFish+initShark > worldWidth*worldHeight {
-		panic("Not enough space for Fish and Shark!")
+	if *nFish+*nSharks > *wwidth**wheight {
+		log.Fatal("Not enough space for Fish and Shark!")
 	}
 
-	// Set up the world map as a 2-D Slice
-	wm := make(WorldMap, worldHeight)
-	for i := range wm {
-		wm[i] = make([]MapNode, worldWidth)
-	}
+	wm = initWator()
 
-	slist := list.New() // list of sharks
-	flist := list.New() // list of fish
-
-	// Create the initial set of fish.
-	for i := 0; i < initFish; i++ {
-		f := new(Fish)
-		for {
-			x := rand.Intn(worldWidth - 1)
-			y := rand.Intn(worldHeight - 1)
-			if wm[x][y].ctype == PLANKTON {
-				f.x = x
-				f.y = y
-				break
-			}
-		}
-		wm[f.x][f.y].ctype = FISH
-		wm[f.x][f.y].creature = flist.PushBack(f)
-	}
-
-	// Create the initial set of sharks.
-	for i := 0; i < initShark; i++ {
-		s := new(Shark)
-		for {
-			x := rand.Intn(worldWidth)
-			y := rand.Intn(worldHeight)
-			if wm[x][y].ctype == PLANKTON {
-				wm[x][y].ctype = SHARK
-				s.x = x
-				s.y = y
-				break
-			}
-		}
-		wm[s.x][s.y].creature = slist.PushBack(s)
-	}
-	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
-	DrawMap(wm)
-	termbox.Flush()
-
-	// Game loop
-	eq := make(chan termbox.Event) // channel to pass keyboard events
-	var dv [4]bool                 // array that tracks direction tried
-	for {
-
-		// Listen for keyboard even to signal existing game loop.
-		go GetTermboxEvents(eq)
-		select {
-		case ev := <-eq:
-			if ev.Type == termbox.EventKey && ev.Key == termbox.KeyEsc {
-				bklp = true
-			}
-		default:
-			bklp = false
-		}
-
-		termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
-		// Loop through each fish.
-		for e := flist.Front(); e != nil; e = e.Next() {
-			f := e.Value.(*Fish)
-			for i := range dv {
-				dv[i] = false
-			}
-			for { // Loop until an unoccupied direction is found.
-				nx, ny, d := GetDirection(f.x, f.y)
-				dv[d] = true
-
-				f.spawn++
-
-				if wm[nx][ny].ctype == PLANKTON {
-					// Determine if we spawn a new fish.  If so then put in the orig spot.
-					if f.spawn == FISHSPAWN && flist.Len()+slist.Len() < worldWidth*worldHeight {
-						nf := new(Fish)
-						nf.x = f.x
-						nf.y = f.y
-						nf.spawn = 0
-						f.spawn = 0
-						wm[nf.x][nf.y].ctype = FISH
-						wm[nf.x][nf.y].creature = flist.PushBack(nf)
-					} else {
-						wm[f.x][f.y].ctype = PLANKTON
-						wm[f.x][f.y].creature = nil
-					}
-					wm[nx][ny].ctype = FISH
-					wm[nx][ny].creature = e
-					f.x = nx
-					f.y = ny
-					break
-				}
-
-				if dv[0] && dv[1] && dv[2] && dv[3] {
-					break // No unoccupied adjacent space.
-				}
-			}
-		}
-
-		// Loop through each shark.
-		for e := slist.Front(); e != nil; e = e.Next() {
-			s := e.Value.(*Shark)
-			for i := range dv {
-				dv[i] = false
-			}
-			for {
-				nx, ny, d := GetDirection(s.x, s.y)
-				dv[d] = true
-				s.spawn++
-				s.health++
-
-				if wm[nx][ny].ctype == PLANKTON || wm[nx][ny].ctype == FISH {
-					if s.spawn == SHARKSPAWN && flist.Len()+slist.Len() < worldWidth*worldHeight {
-						ns := new(Shark)
-						ns.x = s.x
-						ns.y = s.y
-						ns.spawn = 0
-						s.spawn = 0
-						wm[ns.x][ns.y].ctype = SHARK
-						wm[ns.x][ns.y].creature = slist.PushBack(ns)
-					} else {
-						wm[s.x][s.y].ctype = PLANKTON
-						wm[s.x][s.y].creature = nil
-					}
-					if wm[nx][ny].ctype == FISH {
-						flist.Remove(wm[nx][ny].creature.(*list.Element))
-						wm[nx][ny].creature = nil
-						s.health = 0
-					}
-
-					if s.health == SHARKHEALTH {
-						wm[nx][ny].ctype = PLANKTON
-						wm[nx][ny].creature = nil
-						slist.Remove(e)
-					} else {
-						wm[nx][ny].ctype = SHARK
-						wm[nx][ny].creature = e
-						s.x = nx
-						s.y = ny
-					}
-					break
-				}
-				if dv[0] && dv[1] && dv[2] && dv[3] {
-					break
-				}
-			}
-		}
-		if bklp {
-			break
-		}
-		DrawMap(wm)
-		termbox.Flush()
-		time.Sleep(time.Duration(1) * time.Second)
+	if err := ebiten.Run(update, *wwidth, *wheight, 2, "Wator"); err != nil {
+		log.Fatal(err)
 	}
 }
