@@ -15,7 +15,7 @@ knowledgeable gopher out there.
 
 ## Running
 
-To run wator just run the `wator` binary that is built.
+To run wator just run the `wator` binary that is built or `go run lazyhaker.dev/wator`.
 
 ```
 Usage:
