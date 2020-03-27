@@ -175,6 +175,7 @@ func Chronon(c int) {
 						foundfish = true
 						wm[xcoord][ycoord] = wm[x][y]
 						wm[xcoord][ycoord].health = *starve
+						wm[x][y] = nil
 						break
 					}
 				}
