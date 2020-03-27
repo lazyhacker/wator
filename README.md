@@ -13,7 +13,7 @@ knowledgeable gopher out there.
 
 `go get lazyhacker.dev/wator`
 
-##
+## Running
 
 To run wator just run the `wator` binary that is built.
 
@@ -34,3 +34,7 @@ Usage:
   -width int
     	Width of the world (East - West). (default: 320) (default 320)
 ```
+
+## Run In Browser
+
+See this running in your browser at https://lazyhacker.dev/wator.
