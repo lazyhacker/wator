@@ -94,6 +94,7 @@ func Chronon(c int) {
 			switch wm[x][y].species {
 			case FISH:
 				foundspace := false
+				wm[x][y].chronon = c
 				for i := 0; i < 4; i++ {
 					d += i
 
@@ -116,38 +117,37 @@ func Chronon(c int) {
 					if wm[xcoord][ycoord] == nil {
 						foundspace = true
 						wm[xcoord][ycoord] = wm[x][y]
-
-						//log.Printf("Moving fish from (%d, %d)  to (%d, %d)\n", x, y, xcoord, ycoord)
+						wm[x][y] = nil
 
 						// If not a baby and of spawning age.
-						if wm[x][y].age != 0 && wm[x][y].age%*fBreed == 0 {
-							// spawn a new fish in its place
+						if wm[xcoord][ycoord].age != 0 && wm[xcoord][ycoord].age%*fBreed == 0 {
+							// spawn a new fish in its old place
 							wm[x][y] = &creature{
 								age:     0,
 								species: FISH,
 								asset:   fishcolor,
 								chronon: c,
 							}
-						} else {
-							wm[x][y] = nil
 						}
 						break
 					}
 				}
+				// When fish has no place to move to then it starves and dies.
 				if !foundspace {
 					wm[x][y] = nil
 				}
 			case SHARK:
-				//log.Printf("Shark at (%d, %d)\n", x, y)
 
 				foundfish := false
-				wm[x][y].health = wm[x][y].health - 1
+				wm[x][y].chronon = c
 
+				// Sharks get hungrier at each turn.
+				wm[x][y].health = wm[x][y].health - 1
+				// Shark starved to death.
 				if wm[x][y].health <= 0 {
 					wm[x][y] = nil
 					break
 				}
-				wm[x][y].chronon = c
 
 				for i := 0; i < 4; i++ {
 					d += i
@@ -201,7 +201,6 @@ func Chronon(c int) {
 
 						if wm[xcoord][ycoord] == nil {
 							wm[xcoord][ycoord] = wm[x][y]
-							wm[xcoord][ycoord].chronon = c
 							wm[x][y] = nil
 
 							// Spawn a new shark in the old spot.
