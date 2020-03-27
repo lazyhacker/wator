@@ -22,19 +22,19 @@ To run wator just run the `wator` binary that is built or `go run lazyhaker.dev/
 ```
 Usage:
   -fbreed int
-    	# of cycles for fish to reproduce (default: 500) (default 500)
+    	# of cycles for fish to reproduce. (default 400)
   -fish int
     	Initial # of fish. (default 1000)
   -height int
-    	Height of the world (North-South). (default: 240) (default 240)
+    	Height of the world (North-South). (default 240)
   -sbreed int
-    	# of cycles for shark to reproduce (default: 100) (default 100)
+    	# of cycles for shark to reproduce. (default 150)
   -sharks int
     	Initial # of sharks. (default 500)
   -starve int
-    	# of cycles shark can go with feeding before dying (default: 100) (default 100)
+    	# of cycles shark can go with feeding before dying. (default 100)
   -width int
-    	Width of the world (East - West). (default: 320) (default 320)
+    	Width of the world (East - West). (default 320)
 ```
 
 Run In Browser
