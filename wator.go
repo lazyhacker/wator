@@ -40,13 +40,13 @@ type coordinate struct {
 }
 
 var (
-	nFish   = flag.Int("fish", 10, "Initial # of fish.")
-	nSharks = flag.Int("sharks", 1000, "Initial # of sharks.")
-	fBreed  = flag.Int("fbreed", 20, "# of cycles for fish to reproduce (default: 20)")
-	sBreed  = flag.Int("sbreed", 30, "# of cycles for shark to reproduce (default: 40)")
-	starve  = flag.Int("starve", 30, "# of cycles shark can go with feeding before dying (default: 15)")
-	wwidth  = flag.Int("width", 320, "Width of the world (East - West).")
-	wheight = flag.Int("height", 240, "Height of the world (North-South).")
+	nFish   = flag.Int("fish", 1000, "Initial # of fish.")
+	nSharks = flag.Int("sharks", 500, "Initial # of sharks.")
+	fBreed  = flag.Int("fbreed", 500, "# of cycles for fish to reproduce (default: 500)")
+	sBreed  = flag.Int("sbreed", 100, "# of cycles for shark to reproduce (default: 100)")
+	starve  = flag.Int("starve", 100, "# of cycles shark can go with feeding before dying (default: 100)")
+	wwidth  = flag.Int("width", 320, "Width of the world (East - West). (default: 320)")
+	wheight = flag.Int("height", 240, "Height of the world (North-South). (default: 240)")
 )
 
 var tick = 0
@@ -61,6 +61,7 @@ const (
 var (
 	fishcolor  = color.RGBA{255, 255, 0, 255} // YELLOW
 	sharkcolor = color.RGBA{255, 0, 0, 255}   // RED
+	watercolor = color.RGBA{0, 41, 58, 255}   // Blue
 )
 
 type creature struct {
@@ -140,9 +141,9 @@ func Chronon(c int) {
 				//log.Printf("Shark at (%d, %d)\n", x, y)
 
 				foundfish := false
-				wm[x][y].health -= 1
+				wm[x][y].health = wm[x][y].health - 1
 
-				if wm[x][y].health == 0 {
+				if wm[x][y].health <= 0 {
 					wm[x][y] = nil
 					break
 				}
@@ -276,7 +277,7 @@ func initWator() [][]*creature {
 
 			if wm[x][y] == nil {
 				wm[x][y] = &creature{
-					age:     0,
+					age:     rand.Intn(*fBreed),
 					species: FISH,
 					asset:   fishcolor,
 				}
@@ -296,7 +297,7 @@ func initWator() [][]*creature {
 
 			if wm[x][y] == nil {
 				wm[x][y] = &creature{
-					age:     0,
+					age:     rand.Intn(*sBreed),
 					species: SHARK,
 					health:  *starve,
 					asset:   sharkcolor,
@@ -338,7 +339,7 @@ func update(screen *ebiten.Image) error {
 		return nil
 	}
 
-	screen.Fill(color.RGBA{255, 255, 255, 255})
+	screen.Fill(watercolor)
 	render(screen)
 	ebitenutil.DebugPrint(screen, strconv.Itoa(tick))
 	return nil
@@ -351,7 +352,7 @@ func render(screen *ebiten.Image) {
 			if wm[x][y] != nil {
 				screen.Set(x, y, wm[x][y].asset)
 			} else {
-				screen.Set(x, y, color.RGBA{0, 0, 0, 255})
+				screen.Set(x, y, watercolor)
 			}
 		}
 	}
