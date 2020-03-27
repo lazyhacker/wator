@@ -40,10 +40,10 @@ type coordinate struct {
 }
 
 var (
-	nFish   = flag.Int("fish", 1000, "Initial # of fish.")
-	nSharks = flag.Int("sharks", 500, "Initial # of sharks.")
-	fBreed  = flag.Int("fbreed", 500, "# of cycles for fish to reproduce (default: 500)")
-	sBreed  = flag.Int("sbreed", 100, "# of cycles for shark to reproduce (default: 100)")
+	nFish   = flag.Int("fish", 1000, "Initial # of fish. (default: 1000)")
+	nSharks = flag.Int("sharks", 500, "Initial # of sharks. (default: 500)")
+	fBreed  = flag.Int("fbreed", 400, "# of cycles for fish to reproduce (default: 400)")
+	sBreed  = flag.Int("sbreed", 150, "# of cycles for shark to reproduce (default: 150)")
 	starve  = flag.Int("starve", 100, "# of cycles shark can go with feeding before dying (default: 100)")
 	wwidth  = flag.Int("width", 320, "Width of the world (East - West). (default: 320)")
 	wheight = flag.Int("height", 240, "Height of the world (North-South). (default: 240)")
