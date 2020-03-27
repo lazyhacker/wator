@@ -1,7 +1,7 @@
 This is an implementation of the  Wa-Tor (http://en.wikipedia.org/wiki/Wa-Tor)
 simulation.
 
-[!wator.gif](wator.gif)
+![wator.gif](wator.gif)
 
 I started this project as an exercise for me to learn the
 [Go Programming Language](http://golang.org) so there will many newbie mistakes
