@@ -12,7 +12,7 @@ gopher out there.
 Install
 -------
 
-`go get lazyhacker.dev/wator`
+`go install lazyhacker.dev/wator`
 
 Running
 -------
