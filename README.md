@@ -3,7 +3,7 @@ simulation.
 
 ![wator.gif](wator.gif)
 
-I started this project as an exercise for me to learn the [Go Programming
+I started this project as an exercise to learn the [Go Programming
 Language](http://golang.org) so there will many newbie mistakes and
 non-idiomatic patterns. This project is probably not much use to anyone else
 except maybe to help people realize that there is an even less knowledgeable
@@ -17,7 +17,8 @@ Install
 Running
 -------
 
-To run wator just run the `wator` binary that is built or `go run lazyhaker.dev/wator`.
+To run wator just run the `wator` binary that is built or `go run
+lazyhaker.dev/wator`.
 
 ```
 Usage:
@@ -37,7 +38,7 @@ Usage:
     	Width of the world (East - West). (default 320)
 ```
 
-Run In Browser
---------------
+See it in your browser
+----------------------
 
 See this running in your browser at https://lazyhacker.dev/wator.
