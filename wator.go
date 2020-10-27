@@ -23,8 +23,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/hajimehoshi/ebiten"
-	"github.com/hajimehoshi/ebiten/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 // Define the directions fish/sharks can go.
@@ -42,9 +42,9 @@ type coordinate struct {
 var (
 	nFish   = flag.Int("fish", 1000, "Initial # of fish.")
 	nSharks = flag.Int("sharks", 500, "Initial # of sharks.")
-	fBreed  = flag.Int("fbreed", 400, "# of cycles for fish to reproduce.")
+	fBreed  = flag.Int("fbreed", 100, "# of cycles for fish to reproduce.")
 	sBreed  = flag.Int("sbreed", 150, "# of cycles for shark to reproduce.")
-	starve  = flag.Int("starve", 100, "# of cycles shark can go with feeding before dying.")
+	starve  = flag.Int("starve", 150, "# of cycles shark can go with feeding before dying.")
 	wwidth  = flag.Int("width", 320, "Width of the world (East - West).")
 	wheight = flag.Int("height", 240, "Height of the world (North-South).")
 )
@@ -330,23 +330,17 @@ func debug() {
 	}
 }
 
-func update(screen *ebiten.Image) error {
+type Game struct{}
 
+func (g *Game) Update() error {
 	tick++
 	Chronon(tick)
-
-	if ebiten.IsDrawingSkipped() {
-		return nil
-	}
-
-	screen.Fill(watercolor)
-	render(screen)
-	ebitenutil.DebugPrint(screen, strconv.Itoa(tick))
 	return nil
-
 }
 
-func render(screen *ebiten.Image) {
+func (g *Game) Draw(screen *ebiten.Image) {
+
+	screen.Fill(watercolor)
 	for x := 0; x < *wwidth; x++ {
 		for y := 0; y < *wheight; y++ {
 			if wm[x][y] != nil {
@@ -356,6 +350,13 @@ func render(screen *ebiten.Image) {
 			}
 		}
 	}
+
+	ebitenutil.DebugPrint(screen, strconv.Itoa(tick))
+
+}
+
+func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
+	return *wwidth, *wheight
 }
 
 func main() {
@@ -365,10 +366,12 @@ func main() {
 	if *nFish+*nSharks > *wwidth**wheight {
 		log.Fatal("Not enough space for Fish and Shark!")
 	}
-
 	wm = initWator()
 
-	if err := ebiten.Run(update, *wwidth, *wheight, 2, "Wator"); err != nil {
+	ebiten.SetWindowSize(640, 480)
+	ebiten.SetWindowTitle("Wator")
+
+	if err := ebiten.RunGame(&Game{}); err != nil {
 		log.Fatal(err)
 	}
 }
