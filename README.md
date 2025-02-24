@@ -41,4 +41,4 @@ Usage:
 See it in your browser
 ----------------------
 
-See this running in your browser at https://lazyhacker.dev/wator.
+See this running in your browser at https://www.lazyhacker.com/wator.
