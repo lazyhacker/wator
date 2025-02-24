@@ -1,4 +1,4 @@
-This is an implementation of the Wa-Tor (http://en.wikipedia.org/wiki/Wa-Tor\)
+This is an implementation of the Wa-Tor (http://en.wikipedia.org/wiki/Wa-Tor)
 simulation.
 
 ![wator.gif](wator.gif)
