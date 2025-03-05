@@ -75,7 +75,7 @@ func Chronon(c int) {
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	var xcoord, ycoord int
+	var newX, newY int
 
 	for y := 0; y < *wheight; y++ {
 		for x := 0; x < *wwidth; x++ {
@@ -100,27 +100,27 @@ func Chronon(c int) {
 
 					switch d % 4 {
 					case NORTH:
-						xcoord = north.x
-						ycoord = north.y
+						newX = north.x
+						newY = north.y
 					case SOUTH:
-						xcoord = south.x
-						ycoord = south.y
+						newX = south.x
+						newY = south.y
 					case EAST:
-						xcoord = east.x
-						ycoord = east.y
+						newX = east.x
+						newY = east.y
 					case WEST:
-						xcoord = west.x
-						ycoord = west.y
+						newX = west.x
+						newY = west.y
 					}
 
 					// Found an open square.
-					if wm[xcoord][ycoord] == nil {
+					if wm[newX][newY] == nil {
 						foundspace = true
-						wm[xcoord][ycoord] = wm[x][y]
+						wm[newX][newY] = wm[x][y]
 						wm[x][y] = nil
 
 						// If not a baby and of spawning age.
-						if wm[xcoord][ycoord].age != 0 && wm[xcoord][ycoord].age%*fBreed == 0 {
+						if wm[newX][newY].age != 0 && wm[newX][newY].age%*fBreed == 0 {
 							// spawn a new fish in its old place
 							wm[x][y] = &creature{
 								age:     0,
@@ -153,28 +153,28 @@ func Chronon(c int) {
 					d += i
 					switch d % 4 {
 					case NORTH:
-						xcoord = north.x
-						ycoord = north.y
+						newX = north.x
+						newY = north.y
 					case SOUTH:
-						xcoord = south.x
-						ycoord = south.y
+						newX = south.x
+						newY = south.y
 					case EAST:
-						xcoord = east.x
-						ycoord = east.y
+						newX = east.x
+						newY = east.y
 					case WEST:
-						xcoord = west.x
-						ycoord = west.y
+						newX = west.x
+						newY = west.y
 					}
 
-					if wm[xcoord][ycoord] == nil {
+					if wm[newX][newY] == nil {
 						break
 					}
 
 					// Found a fish in adjacent square so eat it and move there.
-					if wm[xcoord][ycoord].species == FISH {
+					if wm[newX][newY].species == FISH {
 						foundfish = true
-						wm[xcoord][ycoord] = wm[x][y]
-						wm[xcoord][ycoord].health = *starve
+						wm[newX][newY] = wm[x][y]
+						wm[newX][newY].health = *starve
 						wm[x][y] = nil
 						break
 					}
@@ -186,25 +186,25 @@ func Chronon(c int) {
 						d += i
 						switch d % 4 {
 						case NORTH:
-							xcoord = north.x
-							ycoord = north.y
+							newX = north.x
+							newY = north.y
 						case SOUTH:
-							xcoord = south.x
-							ycoord = south.y
+							newX = south.x
+							newY = south.y
 						case EAST:
-							xcoord = east.x
-							ycoord = east.y
+							newX = east.x
+							newY = east.y
 						case WEST:
-							xcoord = west.x
-							ycoord = west.y
+							newX = west.x
+							newY = west.y
 						}
 
-						if wm[xcoord][ycoord] == nil {
-							wm[xcoord][ycoord] = wm[x][y]
+						if wm[newX][newY] == nil {
+							wm[newX][newY] = wm[x][y]
 							wm[x][y] = nil
 
 							// Spawn a new shark in the old spot.
-							if wm[xcoord][ycoord].age != 0 && wm[xcoord][ycoord].age%*sBreed == 0 {
+							if wm[newX][newY].age != 0 && wm[newX][newY].age%*sBreed == 0 {
 								wm[x][y] = &creature{
 									age:     0,
 									health:  *starve,
